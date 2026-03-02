@@ -7,11 +7,11 @@ members = [
 ]
 
 [workspace.dependencies]
-egui = "0.31"
-eframe = "0.31"
+egui = "0.33"
+eframe = "0.33"
 egui_ratatui = "2.1"
 soft_ratatui = { version = "0.1", features = ["unicodefonts"] }
-ratatui = "0.29"
+ratatui = "0.30"
 crossterm = "0.28"
 anyhow = "1"
 log = "0.4"

@@ -1,1 +1,1 @@
-// FreshView Editor integration
+pub mod widget;
