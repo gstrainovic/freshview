@@ -12,8 +12,9 @@ eframe = "0.33"
 egui_ratatui = "2.1"
 soft_ratatui = { version = "0.1", features = ["unicodefonts"] }
 ratatui = "0.30"
-crossterm = "0.28"
+crossterm = "0.29"
 anyhow = "1"
 log = "0.4"
 mupdf = "0.6"
 env_logger = "0.11"
+fresh-editor = { path = "../fresh/crates/fresh-editor", default-features = true }

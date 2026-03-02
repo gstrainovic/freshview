@@ -10,3 +10,4 @@ soft_ratatui = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 anyhow = { workspace = true }
+fresh-editor = { workspace = true }
