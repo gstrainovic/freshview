@@ -1,4 +1,6 @@
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::{Receiver, Sender};
+use std::thread;
 
 use eframe::egui::{self, ScrollArea, TextureHandle};
 use freshview_editor::app::FreshEditorApp;
@@ -6,23 +8,75 @@ use freshview_viewer::{document::ViewerDocument, renderer::rgba_to_texture};
 
 // --- ViewerTab: A new struct to manage viewer state within a tab ---
 
+enum ViewerMessage {
+    RenderPage { page_idx: i32, zoom: f32 },
+    DocumentOpened { total_pages: i32 },
+    Rendered { rgba: Vec<u8>, width: u32, height: u32, page_idx: i32, zoom: f32 },
+    Error(String),
+}
+
 /// A tab that displays PDF pages or images.
 struct ViewerTab {
     title: String,
     path: PathBuf,
-    document: ViewerDocument,
     texture: Option<TextureHandle>,
     current_page: i32,
     total_pages: i32,
     zoom: f32,
-    needs_render: bool,
+    is_loading: bool,
+    error: Option<String>,
+    
+    // Communication with background worker
+    message_rx: Receiver<ViewerMessage>,
+    worker_tx: Sender<ViewerMessage>,
+    
+    // Tracking what's currently being rendered to avoid redundant requests
+    last_requested_page: i32,
+    last_requested_zoom: f32,
+    last_rendered_page: i32,
+    last_rendered_zoom: f32,
 }
 
 impl ViewerTab {
     /// Open a document (PDF or image) for viewing in a tab.
     pub fn open(path: &Path) -> anyhow::Result<Self> {
-        let document = ViewerDocument::open(path)?;
-        let total_pages = document.page_count();
+        let (tab_tx, tab_rx) = std::sync::mpsc::channel();
+        let (worker_tx, worker_rx) = std::sync::mpsc::channel();
+        
+        let path_clone = path.to_path_buf();
+        let tab_tx_clone = tab_tx.clone();
+        
+        // Start background worker thread
+        thread::spawn(move || {
+            let doc = match ViewerDocument::open(&path_clone) {
+                Ok(d) => {
+                    let pages = d.page_count();
+                    let _ = tab_tx_clone.send(ViewerMessage::DocumentOpened { total_pages: pages });
+                    d
+                }
+                Err(e) => {
+                    let _ = tab_tx_clone.send(ViewerMessage::Error(format!("Failed to open document: {e}")));
+                    return;
+                }
+            };
+            
+            // Listen for render requests
+            while let Ok(msg) = worker_rx.recv() {
+                if let ViewerMessage::RenderPage { page_idx, zoom } = msg {
+                    match doc.render_page(page_idx, zoom) {
+                        Ok((rgba, width, height)) => {
+                            let _ = tab_tx_clone.send(ViewerMessage::Rendered {
+                                rgba, width, height, page_idx, zoom
+                            });
+                        }
+                        Err(e) => {
+                            let _ = tab_tx_clone.send(ViewerMessage::Error(format!("Failed to render page: {e}")));
+                        }
+                    }
+                }
+            }
+        });
+
         let title = path
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
@@ -31,24 +85,80 @@ impl ViewerTab {
         Ok(Self {
             title,
             path: path.to_path_buf(),
-            document,
             texture: None,
             current_page: 0,
-            total_pages,
+            total_pages: 0,
             zoom: 1.0,
-            needs_render: true,
+            is_loading: true,
+            error: None,
+            message_rx: tab_rx,
+            worker_tx,
+            last_requested_page: -1,
+            last_requested_zoom: -1.0,
+            last_rendered_page: -1,
+            last_rendered_zoom: -1.0,
         })
     }
 
     /// Show the viewer's UI (toolbar and content) within a parent UI.
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
-        if self.needs_render {
-            self.render_current_page(ui.ctx());
+        // Poll for messages from worker
+        while let Ok(msg) = self.message_rx.try_recv() {
+            match msg {
+                ViewerMessage::DocumentOpened { total_pages } => {
+                    self.total_pages = total_pages;
+                    self.request_render();
+                }
+                ViewerMessage::Rendered { rgba, width, height, page_idx, zoom } => {
+                    let name = format!("{}:page{}", self.path.display(), page_idx);
+                    self.texture = Some(rgba_to_texture(ui.ctx(), &name, &rgba, width, height));
+                    self.last_rendered_page = page_idx;
+                    self.last_rendered_zoom = zoom;
+                    self.is_loading = false;
+                }
+                ViewerMessage::Error(e) => {
+                    self.error = Some(e);
+                    self.is_loading = false;
+                }
+                _ => {}
+            }
+        }
+
+        if self.error.is_some() {
+            ui.colored_label(egui::Color32::RED, self.error.as_ref().unwrap());
+            return;
         }
 
         self.show_toolbar(ui);
         ui.separator();
-        self.show_content(ui);
+        
+        if self.is_loading && self.texture.is_none() {
+            ui.centered_and_justified(|ui| {
+                ui.spinner();
+                ui.label("Loading document...");
+            });
+        } else {
+            self.show_content(ui);
+        }
+        
+        // If zoom or page changed, request new render if not already requested
+        if self.current_page != self.last_rendered_page || (self.zoom - self.last_rendered_zoom).abs() > 0.01 {
+            self.request_render();
+        }
+    }
+
+    fn request_render(&mut self) {
+        if self.current_page == self.last_requested_page && (self.zoom - self.last_requested_zoom).abs() < 0.01 {
+            return;
+        }
+        
+        self.last_requested_page = self.current_page;
+        self.last_requested_zoom = self.zoom;
+        self.is_loading = true;
+        let _ = self.worker_tx.send(ViewerMessage::RenderPage {
+            page_idx: self.current_page,
+            zoom: self.zoom,
+        });
     }
 
     fn show_toolbar(&mut self, ui: &mut egui::Ui) {
@@ -59,11 +169,10 @@ impl ViewerTab {
                     .clicked()
                 {
                     self.current_page -= 1;
-                    self.needs_render = true;
                 }
                 ui.label(format!(
                     "{} / {}",
-                    self.current_page + 1,
+                    if self.total_pages > 0 { self.current_page + 1 } else { 0 },
                     self.total_pages
                 ));
                 if ui
@@ -74,7 +183,6 @@ impl ViewerTab {
                     .clicked()
                 {
                     self.current_page += 1;
-                    self.needs_render = true;
                 }
                 ui.separator();
             }
@@ -84,7 +192,6 @@ impl ViewerTab {
                 .clicked()
             {
                 self.zoom = (self.zoom - 0.25).max(0.25);
-                self.needs_render = true;
             }
             ui.label(format!("{}%", (self.zoom * 100.0) as i32));
             if ui
@@ -92,7 +199,10 @@ impl ViewerTab {
                 .clicked()
             {
                 self.zoom = (self.zoom + 0.25).min(4.0);
-                self.needs_render = true;
+            }
+            
+            if self.is_loading {
+                ui.spinner();
             }
         });
     }
@@ -101,24 +211,8 @@ impl ViewerTab {
         ScrollArea::both().show(ui, |ui| {
             if let Some(tex) = &self.texture {
                 ui.image(egui::load::SizedTexture::from(tex));
-            } else {
-                ui.label("Rendering...");
             }
         });
-    }
-
-    fn render_current_page(&mut self, ctx: &egui::Context) {
-        self.needs_render = false;
-        match self.document.render_page(self.current_page, self.zoom) {
-            Ok((rgba, width, height)) => {
-                let name = format!("{}:page{}", self.path.display(), self.current_page);
-                self.texture = Some(rgba_to_texture(ctx, &name, &rgba, width, height));
-            }
-            Err(e) => {
-                log::error!("Failed to render page {}: {e}", self.current_page);
-                self.texture = None;
-            }
-        }
     }
 }
 

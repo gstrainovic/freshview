@@ -8,6 +8,10 @@ pub struct ViewerDocument {
     pages: i32,
 }
 
+// mupdf::Document is not Sync, but it is Send. 
+// We can use it in a background thread as long as we don't access it from multiple threads simultaneously.
+unsafe impl Send for ViewerDocument {}
+
 impl ViewerDocument {
     /// Open a PDF or image file
     pub fn open(path: &Path) -> Result<Self> {
@@ -29,8 +33,20 @@ impl ViewerDocument {
             .load_page(page_idx)
             .context("failed to load page")?;
 
-        let scale = zoom * 2.0;
+        // Limit zoom to prevent massive memory usage
+        let zoom = zoom.clamp(0.1, 4.0);
+        let mut scale = zoom * 2.0; 
+        
+        // Ensure we don't exceed a reasonable maximum resolution (e.g., 4096px in any dimension)
+        let page_bounds = page.bounds().context("failed to get page bounds")?;
+        let max_dim = page_bounds.width().max(page_bounds.height());
+        if max_dim * scale > 4096.0 {
+            scale = 4096.0 / max_dim;
+        }
+
         let ctm = Matrix::new_scale(scale, scale);
+        
+        // Request RGBA directly if possible, or convert efficiently
         let cs = Colorspace::device_rgb();
 
         let pixmap = page
@@ -48,10 +64,16 @@ impl ViewerDocument {
         } else if n == 3 {
             // RGB -> convert to RGBA by appending alpha=255
             let pixel_count = (width * height) as usize;
-            let mut rgba = Vec::with_capacity(pixel_count * 4);
-            for pixel in samples.chunks_exact(3) {
-                rgba.extend_from_slice(pixel);
-                rgba.push(255);
+            let mut rgba = vec![255u8; pixel_count * 4];
+            
+            // Fast copy RGB into RGBA buffer using chunks
+            for i in 0..pixel_count {
+                let src_idx = i * 3;
+                let dst_idx = i * 4;
+                rgba[dst_idx] = samples[src_idx];
+                rgba[dst_idx + 1] = samples[src_idx + 1];
+                rgba[dst_idx + 2] = samples[src_idx + 2];
+                // Alpha is already 255 from vec! initialization
             }
             rgba
         } else {

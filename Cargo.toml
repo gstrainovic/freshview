@@ -15,5 +15,6 @@ crossterm = "0.29"
 anyhow = "1"
 log = "0.4"
 mupdf = "0.6"
+sysinfo = "0.33"
 env_logger = "0.11"
 fresh-editor = { path = "../fresh/crates/fresh-editor", default-features = false, features = ["runtime"] }

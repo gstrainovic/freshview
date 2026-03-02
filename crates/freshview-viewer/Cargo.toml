@@ -8,3 +8,6 @@ egui = { workspace = true }
 mupdf = { workspace = true }
 anyhow = { workspace = true }
 log = { workspace = true }
+
+[dev-dependencies]
+sysinfo = { workspace = true }
