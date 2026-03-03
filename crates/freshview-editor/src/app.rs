@@ -42,8 +42,19 @@ impl FreshEditorApp {
         let backend = TestBackend::new(cols, rows);
         let terminal = Terminal::new(backend)?;
 
+        // FreshView-specific: Store all configs/data in ./.fresh/
+        let base_dir = std::env::current_dir()?.join(".fresh");
+        std::fs::create_dir_all(&base_dir)?;
+        
+        let dir_context = DirectoryContext {
+            data_dir: base_dir.join("data"),
+            config_dir: base_dir.join("config"),
+            home_dir: dirs::home_dir(),
+            documents_dir: dirs::document_dir(),
+            downloads_dir: dirs::download_dir(),
+        };
+
         let config = Config::default();
-        let dir_context = DirectoryContext::from_system()?;
         let filesystem = Arc::new(StdFileSystem);
         let editor = Editor::new(
             config,

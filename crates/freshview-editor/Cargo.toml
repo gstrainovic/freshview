@@ -9,4 +9,5 @@ egui_ratatui = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 anyhow = { workspace = true }
+dirs = "6.0"
 fresh-editor = { workspace = true }
