@@ -9,6 +9,7 @@ egui = { workspace = true }
 egui_dock = "0.15"
 freshview-editor = { path = "../freshview-editor" }
 freshview-viewer = { path = "../freshview-viewer" }
+sysinfo = "0.33"
 anyhow = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }

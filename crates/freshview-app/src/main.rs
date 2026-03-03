@@ -204,36 +204,81 @@ impl TabViewer for MyTabViewer<'_> {
 
 // --- Main Application ---
 
+use sysinfo::{System, Pid};
+
 struct FreshViewApp {
     dock_state: DockState<Tab>,
+    sys: System,
+    pid: Pid,
+    last_hw_update: std::time::Instant,
+    metrics: HardwareMetrics,
+}
+
+#[derive(Default, Clone)]
+struct HardwareMetrics {
+    cpu_usage: f32,
+    memory_kb: u64,
 }
 
 impl FreshViewApp {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let editor = FreshEditorApp::new(120, 40).expect("Failed to init editor");
-        let mut dock_state = DockState::new(vec![Tab::Editor(editor)]);
-        Self { dock_state }
+        let dock_state = DockState::new(vec![Tab::Editor(editor)]);
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        let pid = Pid::from(std::process::id() as usize);
+        
+        Self { 
+            dock_state, 
+            sys, 
+            pid,
+            last_hw_update: std::time::Instant::now(),
+            metrics: HardwareMetrics::default(),
+        }
+    }
+
+    fn update_hardware_metrics(&mut self) {
+        if self.last_hw_update.elapsed().as_secs() >= 1 {
+            self.sys.refresh_all();
+            if let Some(process) = self.sys.process(self.pid) {
+                self.metrics.cpu_usage = process.cpu_usage();
+                self.metrics.memory_kb = process.memory();
+                
+                log::info!(
+                    "STATS | CPU: {:>5.1}% | RAM: {:>7} MB",
+                    self.metrics.cpu_usage,
+                    self.metrics.memory_kb / 1024
+                );
+            }
+            self.last_hw_update = std::time::Instant::now();
+        }
     }
 }
 
 impl eframe::App for FreshViewApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let start = std::time::Instant::now();
+        self.update_hardware_metrics();
         let mut added_tabs = Vec::new();
         
         DockArea::new(&mut self.dock_state)
             .style(Style::from_egui(ctx.style().as_ref()))
             .show(ctx, &mut MyTabViewer { ctx, added_tabs: &mut added_tabs });
 
-        // If interception logic found new files, add them to the dock
         for new_tab in added_tabs {
             self.dock_state.main_surface_mut().push_to_focused_leaf(new_tab);
         }
 
-        let elapsed = start.elapsed();
-        if elapsed.as_millis() > 16 { // Slow frame (> 60 FPS)
-            log::warn!("Slow frame: {:?}", elapsed);
-        }
+        // --- Performance HUD ---
+        egui::Window::new("🚀 Performance HUD")
+            .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-10.0, 10.0))
+            .collapsible(false)
+            .resizable(false)
+            .title_bar(false)
+            .show(ctx, |ui| {
+                ui.label(format!("CPU: {:.1}%", self.metrics.cpu_usage));
+                ui.label(format!("RAM: {} MB", self.metrics.memory_kb / 1024));
+                ui.label(format!("FPS: {:.0}", 1.0 / ctx.input(|i| i.stable_dt)));
+            });
     }
 }
 
