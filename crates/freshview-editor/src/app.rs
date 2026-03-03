@@ -85,7 +85,7 @@ impl FreshEditorApp {
         
         // Calculate cell size based on current egui font.
         let font_id = egui::TextStyle::Monospace.resolve(ui.style());
-        let (char_width, char_height) = ui.fonts_mut(|f| {
+        let (char_width, char_height): (f32, f32) = ui.fonts(|f| {
             (f.glyph_width(&font_id, ' '), f.row_height(&font_id))
         });
 
@@ -174,45 +174,71 @@ impl FreshEditorApp {
             if changed {
                 self.dirty.store(true, Ordering::Relaxed);
             }
+            ui.ctx().request_repaint_after(TICK_INTERVAL);
         }
 
         // Draw Ratatui to our internal buffer.
         let editor = &mut self.editor;
         self.terminal.draw(|frame| editor.render(frame)).expect("failed to draw");
 
-        // --- Render Ratatui cells using egui Painter (SHARP) ---
+        // --- Optimized Batch Rendering ---
+        let rect = ui.available_rect_before_wrap();
         let painter = ui.painter();
-        let rect = ui.min_rect();
         let buffer = self.terminal.backend().buffer();
 
         for y in 0..self.rows {
-            for x in 0..self.cols {
+            let mut x = 0;
+            while x < self.cols {
                 let cell = &buffer[(x, y)];
-                let pos = rect.min + egui::vec2(x as f32 * char_width, y as f32 * char_height);
-                let cell_rect = egui::Rect::from_min_size(pos, egui::vec2(char_width, char_height));
-
-                // Draw background
+                let fg = translate_color(cell.fg);
                 let bg = match cell.bg {
                     ratatui::style::Color::Reset => egui::Color32::TRANSPARENT,
                     c => translate_color(c),
                 };
-                if bg != egui::Color32::TRANSPARENT {
-                    painter.rect_filled(cell_rect, 0.0, bg);
+
+                // Find how many characters to the right have the same style
+                let mut run_width = 1;
+                while x + run_width < self.cols {
+                    let next_cell = &buffer[(x + run_width, y)];
+                    if next_cell.fg == cell.fg && next_cell.bg == cell.bg {
+                        run_width += 1;
+                    } else {
+                        break;
+                    }
                 }
 
-                // Draw symbol
-                let fg = translate_color(cell.fg);
-                let symbol = cell.symbol();
-                if !symbol.is_empty() && symbol != " " {
+                let pos = rect.min + egui::vec2(x as f32 * char_width, y as f32 * char_height);
+                let run_rect = egui::Rect::from_min_size(pos, egui::vec2(char_width * run_width as f32, char_height));
+
+                // Draw background for the whole run
+                if bg != egui::Color32::TRANSPARENT {
+                    painter.rect_filled(run_rect, 0.0, bg);
+                }
+
+                // Draw text for the whole run (if not just spaces)
+                let mut text = String::with_capacity(run_width as usize);
+                for i in 0..run_width {
+                    text.push_str(buffer[(x + i, y)].symbol());
+                }
+                
+                if !text.trim().is_empty() {
                     painter.text(
-                        cell_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        symbol,
+                        pos,
+                        egui::Align2::LEFT_TOP,
+                        &text,
                         font_id.clone(),
                         fg,
                     );
                 }
+
+                x += run_width;
             }
+        }
+        
+        // Ensure we repaint if something happened
+        if self.dirty.load(Ordering::Relaxed) {
+            ui.ctx().request_repaint();
+            self.dirty.store(false, Ordering::Relaxed);
         }
     }
 

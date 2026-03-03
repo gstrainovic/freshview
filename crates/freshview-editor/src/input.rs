@@ -104,11 +104,8 @@ fn translate_keycode(key: egui::Key, text_char: Option<char>) -> KeyCode {
         egui::Key::Slash => KeyCode::Char(text_char.unwrap_or('/')),
         egui::Key::Pipe => KeyCode::Char(text_char.unwrap_or('|')),
         egui::Key::Questionmark => KeyCode::Char(text_char.unwrap_or('?')),
-        egui::Key::Exclamationmark => KeyCode::Char(text_char.unwrap_or('!')),
         egui::Key::OpenBracket => KeyCode::Char(text_char.unwrap_or('[')),
         egui::Key::CloseBracket => KeyCode::Char(text_char.unwrap_or(']')),
-        egui::Key::OpenCurlyBracket => KeyCode::Char(text_char.unwrap_or('{')),
-        egui::Key::CloseCurlyBracket => KeyCode::Char(text_char.unwrap_or('}')),
         egui::Key::Backtick => KeyCode::Char(text_char.unwrap_or('`')),
         egui::Key::Minus => KeyCode::Char(text_char.unwrap_or('-')),
         egui::Key::Period => KeyCode::Char(text_char.unwrap_or('.')),
@@ -198,8 +195,5 @@ fn translate_keycode(key: egui::Key, text_char: Option<char>) -> KeyCode {
         egui::Key::Copy => KeyCode::Char('c'),
         egui::Key::Cut => KeyCode::Char('x'),
         egui::Key::Paste => KeyCode::Char('v'),
-
-        // Browser back — no direct crossterm equivalent
-        egui::Key::BrowserBack => KeyCode::Esc,
     }
 }

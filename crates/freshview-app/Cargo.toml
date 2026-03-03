@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 eframe = { workspace = true }
 egui = { workspace = true }
+egui_dock = "0.15"
 freshview-editor = { path = "../freshview-editor" }
 freshview-viewer = { path = "../freshview-viewer" }
 anyhow = { workspace = true }
