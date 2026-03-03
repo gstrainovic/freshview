@@ -2091,6 +2091,7 @@ dependencies = [
  "freshview-editor",
  "freshview-viewer",
  "log",
+ "sysinfo",
 ]
 
 [[package]]

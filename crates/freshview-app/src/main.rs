@@ -212,12 +212,19 @@ struct FreshViewApp {
     pid: Pid,
     last_hw_update: std::time::Instant,
     metrics: HardwareMetrics,
+    
+    // FPS tracking
+    frame_count: u32,
+    last_fps_time: std::time::Instant,
+    actual_fps: u32,
 }
 
 #[derive(Default, Clone)]
 struct HardwareMetrics {
     cpu_usage: f32,
     memory_kb: u64,
+    gpu_usage: Option<u32>,
+    vram_kb: Option<u64>,
 }
 
 impl FreshViewApp {
@@ -234,20 +241,58 @@ impl FreshViewApp {
             pid,
             last_hw_update: std::time::Instant::now(),
             metrics: HardwareMetrics::default(),
+            frame_count: 0,
+            last_fps_time: std::time::Instant::now(),
+            actual_fps: 0,
         }
     }
 
     fn update_hardware_metrics(&mut self) {
+        // Update FPS every second
+        self.frame_count += 1;
+        if self.last_fps_time.elapsed().as_secs() >= 1 {
+            self.actual_fps = self.frame_count;
+            self.frame_count = 0;
+            self.last_fps_time = std::time::Instant::now();
+        }
+
+        // Update Hardware stats every second
         if self.last_hw_update.elapsed().as_secs() >= 1 {
             self.sys.refresh_all();
             if let Some(process) = self.sys.process(self.pid) {
                 self.metrics.cpu_usage = process.cpu_usage();
                 self.metrics.memory_kb = process.memory();
                 
+                // 1. Try AMD/Intel (DRM)
+                self.metrics.gpu_usage = std::fs::read_to_string("/sys/class/drm/card0/device/gpu_busy_percent")
+                    .ok().and_then(|s| s.trim().parse().ok());
+                
+                self.metrics.vram_kb = std::fs::read_to_string("/sys/class/drm/card0/device/mem_info_vram_used")
+                    .ok().and_then(|s| s.trim().parse::<u64>().ok().map(|v| v / 1024));
+
+                // 2. Fallback to NVIDIA (nvidia-smi)
+                if self.metrics.gpu_usage.is_none() {
+                    use std::process::Command;
+                    if let Ok(output) = Command::new("nvidia-smi")
+                        .args(["--query-gpu=utilization.gpu,memory.used", "--format=csv,noheader,nounits"])
+                        .output() 
+                    {
+                        let s = String::from_utf8_lossy(&output.stdout);
+                        let parts: Vec<&str> = s.split(',').map(|p| p.trim()).collect();
+                        if parts.len() >= 2 {
+                            self.metrics.gpu_usage = parts[0].parse().ok();
+                            self.metrics.vram_kb = parts[1].parse::<u64>().ok().map(|v| v * 1024); // MiB to KB
+                        }
+                    }
+                }
+
                 log::info!(
-                    "STATS | CPU: {:>5.1}% | RAM: {:>7} MB",
+                    "STATS | FPS: {:>3} | CPU: {:>5.1}% | RAM: {:>7} MB | GPU: {:>3}% | VRAM: {:>7} MB",
+                    self.actual_fps,
                     self.metrics.cpu_usage,
-                    self.metrics.memory_kb / 1024
+                    self.metrics.memory_kb / 1024,
+                    self.metrics.gpu_usage.unwrap_or(0),
+                    self.metrics.vram_kb.unwrap_or(0) / 1024
                 );
             }
             self.last_hw_update = std::time::Instant::now();
@@ -275,9 +320,19 @@ impl eframe::App for FreshViewApp {
             .resizable(false)
             .title_bar(false)
             .show(ctx, |ui| {
+                ui.label(format!("FPS: {}", self.actual_fps));
                 ui.label(format!("CPU: {:.1}%", self.metrics.cpu_usage));
                 ui.label(format!("RAM: {} MB", self.metrics.memory_kb / 1024));
-                ui.label(format!("FPS: {:.0}", 1.0 / ctx.input(|i| i.stable_dt)));
+                
+                if let Some(gpu) = self.metrics.gpu_usage {
+                    ui.label(format!("GPU: {}%", gpu));
+                } else {
+                    ui.label("GPU: N/A");
+                }
+                
+                if let Some(vram) = self.metrics.vram_kb {
+                    ui.label(format!("VRAM: {} MB", vram / 1024));
+                }
             });
     }
 }
