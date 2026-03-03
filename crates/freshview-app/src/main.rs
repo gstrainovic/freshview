@@ -206,105 +206,86 @@ impl TabViewer for MyTabViewer<'_> {
 
 use sysinfo::{System, Pid};
 
+use std::sync::{Arc, Mutex};
+
 struct FreshViewApp {
     dock_state: DockState<Tab>,
-    sys: System,
-    pid: Pid,
-    last_hw_update: std::time::Instant,
-    metrics: HardwareMetrics,
+    shared_metrics: Arc<Mutex<HardwareMetrics>>,
     
-    // FPS tracking
-    frame_count: u32,
-    last_fps_time: std::time::Instant,
-    actual_fps: u32,
+    // Honest frame timing
+    last_frame_instant: std::time::Instant,
+    frame_time_ms: f32,
 }
 
 #[derive(Default, Clone)]
 struct HardwareMetrics {
     cpu_usage: f32,
-    memory_kb: u64,
-    gpu_usage: Option<u32>,
-    vram_kb: Option<u64>,
+    memory_mb: u64,
+    gpu_usage: u32,
+    vram_mb: u64,
 }
 
 impl FreshViewApp {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let editor = FreshEditorApp::new(120, 40).expect("Failed to init editor");
         let dock_state = DockState::new(vec![Tab::Editor(editor)]);
-        let mut sys = System::new_all();
-        sys.refresh_all();
-        let pid = Pid::from(std::process::id() as usize);
+        let metrics = Arc::new(Mutex::new(HardwareMetrics::default()));
         
-        Self { 
-            dock_state, 
-            sys, 
-            pid,
-            last_hw_update: std::time::Instant::now(),
-            metrics: HardwareMetrics::default(),
-            frame_count: 0,
-            last_fps_time: std::time::Instant::now(),
-            actual_fps: 0,
-        }
-    }
-
-    fn update_hardware_metrics(&mut self) {
-        // Update FPS every second
-        self.frame_count += 1;
-        if self.last_fps_time.elapsed().as_secs() >= 1 {
-            self.actual_fps = self.frame_count;
-            self.frame_count = 0;
-            self.last_fps_time = std::time::Instant::now();
-        }
-
-        // Update Hardware stats every second
-        if self.last_hw_update.elapsed().as_secs() >= 1 {
-            self.sys.refresh_all();
-            if let Some(process) = self.sys.process(self.pid) {
-                self.metrics.cpu_usage = process.cpu_usage();
-                self.metrics.memory_kb = process.memory();
+        // --- Creative Background Monitor ---
+        let metrics_clone = Arc::clone(&metrics);
+        std::thread::spawn(move || {
+            let mut sys = System::new_all();
+            let pid = Pid::from(std::process::id() as usize);
+            
+            loop {
+                sys.refresh_all();
+                let mut new_metrics = HardwareMetrics::default();
                 
-                // 1. Try AMD/Intel (DRM)
-                self.metrics.gpu_usage = std::fs::read_to_string("/sys/class/drm/card0/device/gpu_busy_percent")
-                    .ok().and_then(|s| s.trim().parse().ok());
-                
-                self.metrics.vram_kb = std::fs::read_to_string("/sys/class/drm/card0/device/mem_info_vram_used")
-                    .ok().and_then(|s| s.trim().parse::<u64>().ok().map(|v| v / 1024));
+                if let Some(process) = sys.process(pid) {
+                    new_metrics.cpu_usage = process.cpu_usage();
+                    new_metrics.memory_mb = process.memory() / 1024 / 1024;
+                }
 
-                // 2. Fallback to NVIDIA (nvidia-smi)
-                if self.metrics.gpu_usage.is_none() {
-                    use std::process::Command;
-                    if let Ok(output) = Command::new("nvidia-smi")
-                        .args(["--query-gpu=utilization.gpu,memory.used", "--format=csv,noheader,nounits"])
-                        .output() 
-                    {
-                        let s = String::from_utf8_lossy(&output.stdout);
-                        let parts: Vec<&str> = s.split(',').map(|p| p.trim()).collect();
-                        if parts.len() >= 2 {
-                            self.metrics.gpu_usage = parts[0].parse().ok();
-                            self.metrics.vram_kb = parts[1].parse::<u64>().ok().map(|v| v * 1024); // MiB to KB
-                        }
+                // Linux GPU/VRAM fallback check (NVIDIA)
+                let gpu_info = std::process::Command::new("nvidia-smi")
+                    .args(["--query-gpu=utilization.gpu,memory.used", "--format=csv,noheader,nounits"])
+                    .output();
+
+                if let Ok(output) = gpu_info {
+                    let s = String::from_utf8_lossy(&output.stdout);
+                    let parts: Vec<&str> = s.split(',').map(|p| p.trim()).collect();
+                    if parts.len() >= 2 {
+                        new_metrics.gpu_usage = parts[0].parse().unwrap_or(0);
+                        new_metrics.vram_mb = parts[1].parse().unwrap_or(0);
                     }
                 }
 
-                log::info!(
-                    "STATS | FPS: {:>3} | CPU: {:>5.1}% | RAM: {:>7} MB | GPU: {:>3}% | VRAM: {:>7} MB",
-                    self.actual_fps,
-                    self.metrics.cpu_usage,
-                    self.metrics.memory_kb / 1024,
-                    self.metrics.gpu_usage.unwrap_or(0),
-                    self.metrics.vram_kb.unwrap_or(0) / 1024
-                );
+                {
+                    let mut m = metrics_clone.lock().unwrap();
+                    *m = new_metrics;
+                }
+                
+                std::thread::sleep(std::time::Duration::from_secs(1));
             }
-            self.last_hw_update = std::time::Instant::now();
+        });
+
+        Self { 
+            dock_state, 
+            shared_metrics: metrics,
+            last_frame_instant: std::time::Instant::now(),
+            frame_time_ms: 0.0,
         }
     }
 }
 
 impl eframe::App for FreshViewApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.update_hardware_metrics();
+        // Calculate honest frame time
+        let now = std::time::Instant::now();
+        self.frame_time_ms = now.duration_since(self.last_frame_instant).as_secs_f32() * 1000.0;
+        self.last_frame_instant = now;
+
         let mut added_tabs = Vec::new();
-        
         DockArea::new(&mut self.dock_state)
             .style(Style::from_egui(ctx.style().as_ref()))
             .show(ctx, &mut MyTabViewer { ctx, added_tabs: &mut added_tabs });
@@ -313,26 +294,21 @@ impl eframe::App for FreshViewApp {
             self.dock_state.main_surface_mut().push_to_focused_leaf(new_tab);
         }
 
-        // --- Performance HUD ---
-        egui::Window::new("🚀 Performance HUD")
+        // --- Honest Performance HUD ---
+        let metrics = self.shared_metrics.lock().unwrap().clone();
+        
+        egui::Window::new("Perf")
             .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-10.0, 10.0))
-            .collapsible(false)
-            .resizable(false)
             .title_bar(false)
+            .resizable(false)
+            .collapsible(false)
+            .frame(egui::Frame::window(&ctx.style()).fill(egui::Color32::from_black_alpha(180)))
             .show(ctx, |ui| {
-                ui.label(format!("FPS: {}", self.actual_fps));
-                ui.label(format!("CPU: {:.1}%", self.metrics.cpu_usage));
-                ui.label(format!("RAM: {} MB", self.metrics.memory_kb / 1024));
-                
-                if let Some(gpu) = self.metrics.gpu_usage {
-                    ui.label(format!("GPU: {}%", gpu));
-                } else {
-                    ui.label("GPU: N/A");
-                }
-                
-                if let Some(vram) = self.metrics.vram_kb {
-                    ui.label(format!("VRAM: {} MB", vram / 1024));
-                }
+                ui.small(format!("Frame: {:.1} ms", self.frame_time_ms));
+                ui.small(format!("CPU:   {:.1}%", metrics.cpu_usage));
+                ui.small(format!("GPU:   {}%", metrics.gpu_usage));
+                ui.small(format!("RAM:   {} MB", metrics.memory_mb));
+                ui.small(format!("VRAM:  {} MB", metrics.vram_mb));
             });
     }
 }
