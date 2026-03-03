@@ -11,3 +11,5 @@ crossterm = { workspace = true }
 anyhow = { workspace = true }
 dirs = "6.0"
 fresh-editor = { workspace = true }
+sysinfo = "0.33"
+eframe = { workspace = true }

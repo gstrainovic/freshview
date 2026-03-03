@@ -1,0 +1,11 @@
+[package]
+name = "freshview-debug"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fresh-editor = { git = "https://github.com/sinelaw/fresh.git", default-features = false, features = ["runtime"] }
+tokio = { version = "1.49", features = ["full"] }
+serde_json = "1"
+interprocess = "2.4"
+anyhow = "1"

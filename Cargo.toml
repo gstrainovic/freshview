@@ -4,6 +4,7 @@ members = [
     "crates/freshview-app",
     "crates/freshview-editor",
     "crates/freshview-viewer",
+    "crates/freshview-debug",
 ]
 
 [workspace.dependencies]

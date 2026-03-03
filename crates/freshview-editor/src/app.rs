@@ -35,6 +35,8 @@ pub struct FreshEditorApp {
     last_active_buffer_path: Option<PathBuf>,
     /// Paths of image files that were opened by the editor and should be handled by the viewer.
     opened_image_paths: Vec<PathBuf>,
+    /// Cache for layouted lines to avoid re-calculating them every frame.
+    line_cache: Vec<Arc<egui::Galley>>,
 }
 
 impl FreshEditorApp {
@@ -76,6 +78,7 @@ impl FreshEditorApp {
             last_tick: Instant::now(),
             last_active_buffer_path: None,
             opened_image_paths: Vec::new(),
+            line_cache: Vec::new(),
         })
     }
 
@@ -177,68 +180,61 @@ impl FreshEditorApp {
             ui.ctx().request_repaint_after(TICK_INTERVAL);
         }
 
-        // Draw Ratatui to our internal buffer.
-        let editor = &mut self.editor;
-        self.terminal.draw(|frame| editor.render(frame)).expect("failed to draw");
+        // Only redraw Ratatui if dirty.
+        if self.dirty.load(Ordering::Relaxed) || self.line_cache.is_empty() {
+            let editor = &mut self.editor;
+            self.terminal.draw(|frame| editor.render(frame)).expect("failed to draw");
+            
+            // Update cache
+            self.line_cache.clear();
+            let buffer = self.terminal.backend().buffer();
+            for y in 0..self.rows {
+                let mut job = egui::text::LayoutJob::default();
+                for x in 0..self.cols {
+                    let cell = &buffer[(x, y)];
+                    job.append(
+                        cell.symbol(),
+                        0.0,
+                        egui::TextFormat {
+                            font_id: font_id.clone(),
+                            color: translate_color(fg_to_visible(cell.fg, cell.bg)),
+                            ..Default::default()
+                        },
+                    );
+                }
+                self.line_cache.push(ui.fonts(|f| f.layout_job(job)));
+            }
+            self.dirty.store(false, Ordering::Relaxed);
+        }
 
-        // --- Optimized Batch Rendering ---
+        // --- Render from Cache ---
         let rect = ui.available_rect_before_wrap();
         let painter = ui.painter();
         let buffer = self.terminal.backend().buffer();
 
-        for y in 0..self.rows {
+        for (y, galley) in self.line_cache.iter().enumerate() {
+            let line_pos = rect.min + egui::vec2(0.0, y as f32 * char_height);
+            
+            // Draw backgrounds (simple pass as they are fast rects)
             let mut x = 0;
             while x < self.cols {
-                let cell = &buffer[(x, y)];
-                let fg = translate_color(cell.fg);
-                let bg = match cell.bg {
-                    ratatui::style::Color::Reset => egui::Color32::TRANSPARENT,
-                    c => translate_color(c),
-                };
-
-                // Find how many characters to the right have the same style
-                let mut run_width = 1;
-                while x + run_width < self.cols {
-                    let next_cell = &buffer[(x + run_width, y)];
-                    if next_cell.fg == cell.fg && next_cell.bg == cell.bg {
+                let cell = &buffer[(x, y as u16)];
+                if cell.bg != ratatui::style::Color::Reset {
+                    let bg = translate_color(cell.bg);
+                    let mut run_width = 1;
+                    while x + run_width < self.cols && buffer[(x + run_width, y as u16)].bg == cell.bg {
                         run_width += 1;
-                    } else {
-                        break;
                     }
-                }
-
-                let pos = rect.min + egui::vec2(x as f32 * char_width, y as f32 * char_height);
-                let run_rect = egui::Rect::from_min_size(pos, egui::vec2(char_width * run_width as f32, char_height));
-
-                // Draw background for the whole run
-                if bg != egui::Color32::TRANSPARENT {
+                    let pos = rect.min + egui::vec2(x as f32 * char_width, y as f32 * char_height);
+                    let run_rect = egui::Rect::from_min_size(pos, egui::vec2(char_width * run_width as f32, char_height));
                     painter.rect_filled(run_rect, 0.0, bg);
+                    x += run_width;
+                } else {
+                    x += 1;
                 }
-
-                // Draw text for the whole run (if not just spaces)
-                let mut text = String::with_capacity(run_width as usize);
-                for i in 0..run_width {
-                    text.push_str(buffer[(x + i, y)].symbol());
-                }
-                
-                if !text.trim().is_empty() {
-                    painter.text(
-                        pos,
-                        egui::Align2::LEFT_TOP,
-                        &text,
-                        font_id.clone(),
-                        fg,
-                    );
-                }
-
-                x += run_width;
             }
-        }
-        
-        // Ensure we repaint if something happened
-        if self.dirty.load(Ordering::Relaxed) {
-            ui.ctx().request_repaint();
-            self.dirty.store(false, Ordering::Relaxed);
+            
+            painter.galley(line_pos, galley.clone(), egui::Color32::WHITE);
         }
     }
 
@@ -258,6 +254,72 @@ impl FreshEditorApp {
 
     pub fn drain_opened_image_paths(&mut self) -> Vec<PathBuf> {
         std::mem::take(&mut self.opened_image_paths)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use eframe::egui;
+
+    #[test]
+    fn test_dir_creation() {
+        let editor = FreshEditorApp::new(80, 24).unwrap();
+        let base_dir = std::env::current_dir().unwrap().join(".fresh");
+        assert!(base_dir.exists());
+    }
+
+    #[test]
+    fn benchmark_rendering_performance() {
+        let mut app = FreshEditorApp::new(120, 40).expect("Failed to init editor");
+        let ctx = egui::Context::default();
+        
+        ctx.run(Default::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                println!("Starting Performance Benchmark...");
+                let start = Instant::now();
+                let iterations = 100;
+                
+                for _ in 0..iterations {
+                    app.show(ui);
+                }
+                
+                let total_duration = start.elapsed();
+                let avg_duration = total_duration / iterations as u32;
+                
+                println!("--- Performance Report ---");
+                println!("Total time for {} frames: {:?}", iterations, total_duration);
+                println!("Average time per frame:   {:?}", avg_duration);
+                println!("Theoretical max FPS:      {:.2}", 1.0 / avg_duration.as_secs_f64());
+                
+                // Check memory
+                use sysinfo::{System, Pid};
+                let mut sys = System::new_all();
+                sys.refresh_all();
+                let pid = Pid::from(std::process::id() as usize);
+                if let Some(process) = sys.process(pid) {
+                    println!("Memory usage:             {} KB", process.memory() / 1024);
+                }
+                println!("--------------------------");
+                
+                // A frame should be fast enough for 60fps (16ms), our target is < 2ms for text
+                assert!(avg_duration.as_millis() < 10, "Rendering too slow: {:?}", avg_duration);
+            });
+        });
+    }
+}
+
+fn fg_to_visible(fg: ratatui::style::Color, bg: ratatui::style::Color) -> ratatui::style::Color {
+    match fg {
+        ratatui::style::Color::Reset => {
+            if bg == ratatui::style::Color::Reset {
+                ratatui::style::Color::White
+            } else {
+                // If we have a background but reset foreground, try to be smart
+                ratatui::style::Color::Black
+            }
+        }
+        _ => fg,
     }
 }
 
