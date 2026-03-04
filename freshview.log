@@ -300,3 +300,18 @@ STATS | Work:  0.19ms | Delta:   17ms | CPU:  14.7% | GPU:  10% | VRAM:      66 
 STATS | Work:  0.18ms | Delta:  184ms | CPU:  15.0% | GPU:  10% | VRAM:      66 MB
 STATS | Work:  0.20ms | Delta: 1651ms | CPU:   9.0% | GPU:  10% | VRAM:      66 MB
 STATS | Work:  0.28ms | Delta:  765ms | CPU:  13.4% | GPU:  17% | VRAM:      66 MB
+
+--- GRAPHICS ADAPTER INFO ---
+Selected: Quadro P1000
+Backend:  Vulkan
+Driver:   580.119.02
+Type:     DiscreteGpu
+-----------------------------
+STATS | Work:  0.10ms | Delta: 2019ms | CPU:   3.0% | GPU:   1% | VRAM:      34 MB
+STATS | Work:  6.49ms | Delta:  486ms | CPU:   7.0% | GPU:   1% | VRAM:      34 MB
+STATS | Work:  0.52ms | Delta:   25ms | CPU:  51.1% | GPU:   1% | VRAM:      34 MB
+STATS | Work:  0.15ms | Delta: 1243ms | CPU:  22.9% | GPU:   0% | VRAM:      66 MB
+STATS | Work:  0.20ms | Delta:  983ms | CPU:   6.8% | GPU:   0% | VRAM:      66 MB
+STATS | Work:  0.15ms | Delta:  348ms | CPU:  10.0% | GPU:   0% | VRAM:      66 MB
+STATS | Work:  0.12ms | Delta:   17ms | CPU:   6.0% | GPU:   0% | VRAM:      66 MB
+STATS | Work:  0.16ms | Delta: 1812ms | CPU:   3.9% | GPU:  10% | VRAM:      66 MB

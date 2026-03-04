@@ -201,9 +201,9 @@ impl TabViewer for MyTabViewer<'_> {
         !matches!(tab, Tab::Editor(_))
     }
 
-    fn closeable(&mut self, tab: &mut Self::Tab) -> bool {
-        // Explicitly tell egui_dock NOT to show a close button for the editor
-        !matches!(tab, Tab::Editor(_))
+    fn closeable(&mut self, _tab: &mut Self::Tab) -> bool {
+        // Globally disable close buttons for ALL tabs to identify ghost elements
+        false
     }
 }
 
@@ -346,6 +346,7 @@ impl FreshViewApp {
 
         // Render UI
         let mut added_tabs = Vec::new();
+        
         DockArea::new(&mut self.dock_state)
             .style(Style::from_egui(ctx.style().as_ref()))
             .show(ctx, &mut MyTabViewer { ctx, added_tabs: &mut added_tabs });
