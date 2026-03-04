@@ -7,3 +7,102 @@ Type:     DiscreteGpu
 -----------------------------
 STATS | CPU:   0.0% | RAM:     322 MB | GPU:   3% | VRAM:      34 MB
 STATS | CPU:  13.0% | RAM:     336 MB | GPU:   0% | VRAM:      50 MB
+
+--- GRAPHICS ADAPTER INFO ---
+Selected: Quadro P1000
+Backend:  Vulkan
+Driver:   580.119.02
+Type:     DiscreteGpu
+-----------------------------
+STATS | Frame: 16.5ms | CPU:   0.0% | RAM:     322 MB | GPU:   3% | VRAM:      38 MB
+STATS | Frame: 469.8ms | CPU:  11.9% | RAM:     338 MB | GPU:   3% | VRAM:      38 MB
+STATS | Frame: 1708.4ms | CPU:   8.8% | RAM:     343 MB | GPU:   3% | VRAM:      38 MB
+STATS | Frame: 1031.9ms | CPU:   8.9% | RAM:     343 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 1227.0ms | CPU:   7.8% | RAM:     343 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 1202.1ms | CPU:  12.9% | RAM:     343 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 1328.9ms | CPU:  14.9% | RAM:     343 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 32.3ms | CPU:  12.9% | RAM:     343 MB | GPU:  13% | VRAM:      50 MB
+STATS | Frame: 1358.6ms | CPU:  16.9% | RAM:     343 MB | GPU:  13% | VRAM:      50 MB
+STATS | Frame: 1040.7ms | CPU:  11.9% | RAM:     343 MB | GPU:  13% | VRAM:      50 MB
+STATS | Frame:  7.9ms | CPU:   8.9% | RAM:     343 MB | GPU:  13% | VRAM:      50 MB
+STATS | Frame: 18.6ms | CPU:  13.9% | RAM:     337 MB | GPU:  14% | VRAM:      50 MB
+STATS | Frame: 97.6ms | CPU:  38.9% | RAM:     339 MB | GPU:  14% | VRAM:      50 MB
+STATS | Frame: 1127.8ms | CPU:  34.9% | RAM:     339 MB | GPU:  14% | VRAM:      50 MB
+STATS | Frame: 755.0ms | CPU:  17.9% | RAM:     339 MB | GPU:  14% | VRAM:      50 MB
+STATS | Frame: 884.4ms | CPU:  20.0% | RAM:     339 MB | GPU:   8% | VRAM:      50 MB
+STATS | Frame: 2227.1ms | CPU:  19.9% | RAM:     339 MB | GPU:   8% | VRAM:      50 MB
+STATS | Frame: 1310.3ms | CPU:  12.9% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 1500.3ms | CPU:  16.5% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 24.8ms | CPU:   9.9% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 467.0ms | CPU:  47.8% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 16.7ms | CPU:  38.8% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 16.5ms | CPU:  54.5% | RAM:     339 MB | GPU:  35% | VRAM:      50 MB
+STATS | Frame: 16.8ms | CPU:  53.8% | RAM:     339 MB | GPU:  35% | VRAM:      50 MB
+STATS | Frame: 190.0ms | CPU:  45.8% | RAM:     339 MB | GPU:  35% | VRAM:      50 MB
+STATS | Frame: 16.4ms | CPU:  35.9% | RAM:     339 MB | GPU:  35% | VRAM:      50 MB
+STATS | Frame: 450.1ms | CPU:  35.6% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 14.2ms | CPU:  55.7% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 50.7ms | CPU:  15.8% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 16.7ms | CPU:  15.8% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 22.0ms | CPU:  30.7% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 16.1ms | CPU:  52.8% | RAM:     339 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 17.2ms | CPU:  53.8% | RAM:     339 MB | GPU:  35% | VRAM:      50 MB
+STATS | Frame: 2913.6ms | CPU:  10.9% | RAM:     339 MB | GPU:  35% | VRAM:      50 MB
+STATS | Frame: 18.4ms | CPU:  39.6% | RAM:     339 MB | GPU:  31% | VRAM:      50 MB
+STATS | Frame: 18.1ms | CPU:  21.0% | RAM:     339 MB | GPU:  31% | VRAM:      50 MB
+STATS | Frame: 1822.7ms | CPU:  10.9% | RAM:     339 MB | GPU:  31% | VRAM:      50 MB
+STATS | Frame: 1209.0ms | CPU:  10.9% | RAM:     340 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 750.0ms | CPU:  23.4% | RAM:     340 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 337.7ms | CPU:  18.7% | RAM:     340 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 116.1ms | CPU:  20.8% | RAM:     340 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 129.1ms | CPU:  24.8% | RAM:     340 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 209.6ms | CPU:  29.7% | RAM:     340 MB | GPU:  15% | VRAM:      50 MB
+STATS | Frame: 207.2ms | CPU:  57.6% | RAM:     340 MB | GPU:  15% | VRAM:      50 MB
+STATS | Frame: 16.9ms | CPU:  78.4% | RAM:     382 MB | GPU:  15% | VRAM:      50 MB
+STATS | Frame: 250.0ms | CPU:  23.9% | RAM:     382 MB | GPU:  15% | VRAM:      50 MB
+STATS | Frame: 16.5ms | CPU:  32.7% | RAM:     382 MB | GPU:  27% | VRAM:      98 MB
+STATS | Frame: 272.8ms | CPU:  21.0% | RAM:     382 MB | GPU:  27% | VRAM:      98 MB
+STATS | Frame: 17.0ms | CPU:  13.9% | RAM:     382 MB | GPU:  27% | VRAM:      98 MB
+STATS | Frame: 278.8ms | CPU:  21.9% | RAM:     382 MB | GPU:  27% | VRAM:      98 MB
+STATS | Frame: 172.9ms | CPU:  15.9% | RAM:     382 MB | GPU:  27% | VRAM:      98 MB
+STATS | Frame: 1132.1ms | CPU:  14.6% | RAM:     382 MB | GPU:   5% | VRAM:      98 MB
+STATS | Frame: 72.5ms | CPU:  14.9% | RAM:     382 MB | GPU:   5% | VRAM:      98 MB
+STATS | Frame: 83.2ms | CPU:  35.6% | RAM:     382 MB | GPU:   5% | VRAM:      98 MB
+STATS | Frame: 188.4ms | CPU:  15.7% | RAM:     382 MB | GPU:   5% | VRAM:      98 MB
+STATS | Frame: 683.5ms | CPU:  16.5% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 33.8ms | CPU:  13.8% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 30.7ms | CPU:  16.8% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 1088.4ms | CPU:  10.9% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 73.5ms | CPU:  32.7% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 107.2ms | CPU:  17.2% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 681.0ms | CPU:  46.9% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 126.6ms | CPU:  14.6% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 156.7ms | CPU:  17.9% | RAM:     382 MB | GPU:   8% | VRAM:      98 MB
+STATS | Frame: 72.0ms | CPU:  42.7% | RAM:     382 MB | GPU:  18% | VRAM:      98 MB
+STATS | Frame: 16.5ms | CPU:  20.0% | RAM:     382 MB | GPU:  18% | VRAM:      98 MB
+STATS | Frame: 66.9ms | CPU:  41.7% | RAM:     383 MB | GPU:  18% | VRAM:      98 MB
+STATS | Frame: 522.1ms | CPU:  21.9% | RAM:     383 MB | GPU:  18% | VRAM:      98 MB
+STATS | Frame: 1443.2ms | CPU:  42.6% | RAM:     426 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 609.1ms | CPU:  20.8% | RAM:     431 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 271.6ms | CPU:  14.9% | RAM:     431 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 720.8ms | CPU:  16.8% | RAM:     431 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 251.1ms | CPU:  13.8% | RAM:     431 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 424.6ms | CPU:  18.8% | RAM:     431 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 16.8ms | CPU:  10.9% | RAM:     431 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 336.4ms | CPU:  17.9% | RAM:     431 MB | GPU:   0% | VRAM:     162 MB
+STATS | Frame: 452.6ms | CPU:  12.9% | RAM:     431 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 17.6ms | CPU:  26.4% | RAM:     431 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 15.9ms | CPU:  62.5% | RAM:     546 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 16.7ms | CPU:  56.7% | RAM:     549 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 453.4ms | CPU:  46.5% | RAM:     558 MB | GPU:   0% | VRAM:      50 MB
+STATS | Frame: 433.3ms | CPU:  38.9% | RAM:     558 MB | GPU:  42% | VRAM:      50 MB
+STATS | Frame: 519.8ms | CPU:  25.3% | RAM:     558 MB | GPU:  42% | VRAM:      50 MB
+STATS | Frame: 32.4ms | CPU:  30.8% | RAM:     558 MB | GPU:  42% | VRAM:      50 MB
+STATS | Frame: 17.0ms | CPU:  13.9% | RAM:     558 MB | GPU:  42% | VRAM:      50 MB
+STATS | Frame: 796.0ms | CPU:  14.9% | RAM:     559 MB | GPU:   0% | VRAM:     114 MB
+STATS | Frame: 431.9ms | CPU:  17.5% | RAM:     559 MB | GPU:   0% | VRAM:     114 MB
+STATS | Frame: 397.8ms | CPU:  37.6% | RAM:     559 MB | GPU:   0% | VRAM:     114 MB
+STATS | Frame: 16.7ms | CPU:  30.7% | RAM:     559 MB | GPU:   0% | VRAM:     114 MB
+STATS | Frame: 686.0ms | CPU:  17.5% | RAM:     559 MB | GPU:   0% | VRAM:     114 MB
+STATS | Frame: 16.5ms | CPU:  13.9% | RAM:     559 MB | GPU:   8% | VRAM:     114 MB
+STATS | Frame: 275.7ms | CPU:  35.1% | RAM:     559 MB | GPU:   8% | VRAM:     114 MB

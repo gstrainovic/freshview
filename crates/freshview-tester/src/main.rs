@@ -55,8 +55,10 @@ fn call_rpc(stream: &mut TcpStream, method: &str, params: Option<serde_json::Val
     
     let resp: serde_json::Value = serde_json::from_str(&line)?;
     if let Some(err) = resp.get("error") {
-        anyhow::bail!("RPC Error: {}", err);
+        if !err.is_null() {
+            anyhow::bail!("RPC Error: {}", err);
+        }
     }
     
-    Ok(resp["result"].clone())
+    Ok(resp.get("result").cloned().unwrap_or(serde_json::Value::Null))
 }
