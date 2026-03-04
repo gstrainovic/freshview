@@ -200,6 +200,11 @@ impl TabViewer for MyTabViewer<'_> {
         // Prevent closing the editor
         !matches!(tab, Tab::Editor(_))
     }
+
+    fn closeable(&mut self, tab: &mut Self::Tab) -> bool {
+        // Explicitly tell egui_dock NOT to show a close button for the editor
+        !matches!(tab, Tab::Editor(_))
+    }
 }
 
 // --- Main Application ---
@@ -220,6 +225,7 @@ pub struct FreshViewApp {
     last_frame_instant: std::time::Instant,
     #[allow(dead_code)]
     frame_time_ms: f32,
+    #[allow(dead_code)]
     zoom_factor: f32,
     
     // Logging throttle
@@ -386,7 +392,7 @@ impl eframe::App for FreshViewApp {
 
 pub fn run() -> eframe::Result {
     env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Info)
+        .filter_level(log::LevelFilter::Warn)
         .init();
     
     let options = eframe::NativeOptions {

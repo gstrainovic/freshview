@@ -188,3 +188,65 @@ STATS | Work:  5.01ms | Delta: 4438ms | CPU:   6.0% | GPU:   0% | VRAM:      50 
 STATS | Work:  0.32ms | Delta: 2247ms | CPU:   5.0% | GPU:   0% | VRAM:      50 MB
 STATS | Work:  0.14ms | Delta:   62ms | CPU:  15.0% | GPU:   0% | VRAM:      50 MB
 STATS | Work:  0.37ms | Delta:   91ms | CPU:  18.0% | GPU:  23% | VRAM:      50 MB
+
+--- GRAPHICS ADAPTER INFO ---
+Selected: Quadro P1000
+Backend:  Vulkan
+Driver:   580.119.02
+Type:     DiscreteGpu
+-----------------------------
+STATS | Work:  0.31ms | Delta: 1007ms | CPU:   9.7% | GPU:   1% | VRAM:      34 MB
+STATS | Work:  0.32ms | Delta: 1991ms | CPU:   6.0% | GPU:   1% | VRAM:      34 MB
+STATS | Work:  2.06ms | Delta:   21ms | CPU:  11.0% | GPU:   1% | VRAM:      34 MB
+STATS | Work:  0.10ms | Delta: 1054ms | CPU:  31.8% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  2.72ms | Delta: 1117ms | CPU:   6.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  6.76ms | Delta: 1184ms | CPU:   5.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  5.49ms | Delta: 1258ms | CPU:   7.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  4.49ms | Delta:  102ms | CPU:   6.8% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.19ms | Delta:   78ms | CPU:  25.9% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.32ms | Delta:  731ms | CPU:  12.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  2.09ms | Delta:  734ms | CPU:   6.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  5.10ms | Delta: 1525ms | CPU:   6.8% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.13ms | Delta:   74ms | CPU:   8.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  7.46ms | Delta:   98ms | CPU:  15.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.36ms | Delta: 1314ms | CPU:   8.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  5.32ms | Delta:  869ms | CPU:   6.9% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  9.58ms | Delta: 1596ms | CPU:   5.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work: 10.24ms | Delta: 1230ms | CPU:   5.9% | GPU:  21% | VRAM:      50 MB
+STATS | Work:  0.36ms | Delta:  390ms | CPU:   9.0% | GPU:  21% | VRAM:      50 MB
+STATS | Work:  0.04ms | Delta:   78ms | CPU:   9.9% | GPU:  21% | VRAM:      50 MB
+STATS | Work:  5.86ms | Delta: 3946ms | CPU:   5.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  6.46ms | Delta:  490ms | CPU:  13.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  6.07ms | Delta:  796ms | CPU:  21.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.06ms | Delta:   17ms | CPU:   5.9% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.19ms | Delta:   17ms | CPU:  36.8% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.18ms | Delta:   17ms | CPU:  14.0% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  0.46ms | Delta:  213ms | CPU:  15.9% | GPU:   0% | VRAM:      50 MB
+STATS | Work:  6.04ms | Delta:  700ms | CPU:  10.0% | GPU:   3% | VRAM:     114 MB
+STATS | Work:  6.82ms | Delta:  851ms | CPU:   9.0% | GPU:   3% | VRAM:     114 MB
+STATS | Work:  0.41ms | Delta: 1489ms | CPU:   6.0% | GPU:   3% | VRAM:     114 MB
+STATS | Work:  5.65ms | Delta:  629ms | CPU:   9.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  6.58ms | Delta: 1169ms | CPU:   6.8% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  7.04ms | Delta: 1243ms | CPU:   9.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  5.97ms | Delta: 2745ms | CPU:   4.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  5.64ms | Delta: 1123ms | CPU:   8.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  6.12ms | Delta: 1263ms | CPU:   9.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work: 10.47ms | Delta:   81ms | CPU:   6.9% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  7.59ms | Delta:  560ms | CPU:  30.9% | GPU:   0% | VRAM:     114 MB
+STATS | Work: 14.03ms | Delta:  254ms | CPU:   8.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  2.57ms | Delta: 2471ms | CPU:   5.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  0.34ms | Delta:  803ms | CPU:   8.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  0.46ms | Delta: 3385ms | CPU:   6.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  0.36ms | Delta: 1733ms | CPU:   6.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  6.65ms | Delta: 1025ms | CPU:  11.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work: 28.32ms | Delta:  896ms | CPU:  13.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  0.19ms | Delta:  593ms | CPU:  59.0% | GPU:   0% | VRAM:     114 MB
+STATS | Work:  0.07ms | Delta:  496ms | CPU:   8.0% | GPU:   0% | VRAM:     162 MB
+STATS | Work:  0.19ms | Delta:   17ms | CPU:  21.6% | GPU:   0% | VRAM:     162 MB
+STATS | Work:  0.06ms | Delta:    2ms | CPU:   8.0% | GPU:   0% | VRAM:     162 MB
+STATS | Work:  0.05ms | Delta:   16ms | CPU:  24.9% | GPU:   0% | VRAM:     162 MB
+STATS | Work:  0.05ms | Delta:  333ms | CPU:   5.0% | GPU:   0% | VRAM:     162 MB
+STATS | Work:  0.24ms | Delta:  177ms | CPU:  10.9% | GPU:  31% | VRAM:     114 MB
+STATS | Work:  0.07ms | Delta:  166ms | CPU:   8.6% | GPU:  31% | VRAM:     114 MB
+STATS | Work:  0.36ms | Delta:  391ms | CPU:  12.9% | GPU:  31% | VRAM:     114 MB
+STATS | Work:  0.16ms | Delta:  633ms | CPU:  13.0% | GPU:  31% | VRAM:     114 MB
