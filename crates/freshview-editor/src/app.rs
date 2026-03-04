@@ -35,8 +35,8 @@ pub struct FreshEditorApp {
     last_active_buffer_path: Option<PathBuf>,
     /// Paths of image files that were opened by the editor and should be handled by the viewer.
     opened_image_paths: Vec<PathBuf>,
-    /// Cached layout for the entire screen
-    galley_cache: Option<Arc<egui::Galley>>,
+    /// Cache for individual layouted lines
+    line_cache: Vec<Option<Arc<egui::Galley>>>,
     /// Last known pixels_per_point to detect zooming
     last_scale: f32,
 }
@@ -80,7 +80,7 @@ impl FreshEditorApp {
             last_tick: Instant::now(),
             last_active_buffer_path: None,
             opened_image_paths: Vec::new(),
-            galley_cache: None,
+            line_cache: vec![None; rows as usize],
             last_scale: 1.0,
         })
     }
@@ -91,9 +91,8 @@ impl FreshEditorApp {
         // Detect zooming
         if (current_scale - self.last_scale).abs() > 0.001 {
             self.last_scale = current_scale;
-            // We DON'T invalidate the cache immediately. 
-            // We wait for the zoom to "settle" or for a dirty flag.
-            // This is the trick to keep the CPU cool!
+            // Clear cache on zoom to ensure sharpness
+            self.line_cache.fill(None);
         }
 
         // Resize if needed.
@@ -114,7 +113,7 @@ impl FreshEditorApp {
             self.editor.resize(new_cols, new_rows);
             self.terminal.backend_mut().resize(new_cols, new_rows);
             self.dirty.store(true, Ordering::Relaxed);
-            self.galley_cache = None;
+            self.line_cache = vec![None; new_rows as usize];
         }
 
         // Detect newly active image files.
@@ -184,29 +183,46 @@ impl FreshEditorApp {
             }
         });
 
-        // Run editor_tick on a timer.
-        if self.last_tick.elapsed() >= TICK_INTERVAL {
+        // Run editor_tick on a dynamic timer.
+        let dynamic_interval = if self.dirty.load(Ordering::Relaxed) {
+            Duration::from_millis(50) // Fast when active
+        } else {
+            Duration::from_millis(250) // Slow when idle
+        };
+
+        if self.last_tick.elapsed() >= dynamic_interval {
             self.last_tick = Instant::now();
             let changed = editor_tick(&mut self.editor, || Ok(())).unwrap_or(false);
             if changed {
                 self.dirty.store(true, Ordering::Relaxed);
+                ui.ctx().request_repaint(); // Immediate repaint on editor changes
             }
-            ui.ctx().request_repaint_after(TICK_INTERVAL);
         }
 
-        // --- GPU-Smart Caching ---
+        // --- Optimized Per-Line Caching ---
         
-        if self.dirty.load(Ordering::Relaxed) || self.galley_cache.is_none() {
+        if self.dirty.load(Ordering::Relaxed) {
             let editor = &mut self.editor;
             self.terminal.draw(|frame| editor.render(frame)).expect("failed to draw");
             
-            let buffer = self.terminal.backend().buffer();
-            let mut full_job = egui::text::LayoutJob::default();
+            // Optimization: Only clear cache if something really changed
+            // For now we still clear all, but the drawing is much faster than before
+            self.line_cache.fill(None);
+            self.dirty.store(false, Ordering::Relaxed);
+        }
+
+        let rect = ui.available_rect_before_wrap();
+        let painter = ui.painter();
+        let buffer = self.terminal.backend().buffer();
+
+        for y in 0..self.rows {
+            let line_pos = rect.min + egui::vec2(0.0, y as f32 * char_height);
             
-            // Optimization: reuse a single string buffer for the whole frame
-            let mut text_buffer = String::with_capacity(self.cols as usize);
-            
-            for y in 0..self.rows {
+            // Get or create line galley
+            let galley = if let Some(Some(cached)) = self.line_cache.get(y as usize) {
+                cached.clone()
+            } else {
+                let mut job = egui::text::LayoutJob::default();
                 let mut x = 0;
                 while x < self.cols {
                     let cell = &buffer[(x, y)];
@@ -218,13 +234,13 @@ impl FreshEditorApp {
                         x += 1;
                     }
                     
-                    text_buffer.clear();
+                    let mut text = String::new();
                     for i in start_x..x {
-                        text_buffer.push_str(buffer[(i, y)].symbol());
+                        text.push_str(buffer[(i, y)].symbol());
                     }
 
-                    full_job.append(
-                        &text_buffer,
+                    job.append(
+                        &text,
                         0.0,
                         egui::TextFormat {
                             font_id: font_id.clone(),
@@ -234,20 +250,12 @@ impl FreshEditorApp {
                         },
                     );
                 }
-                if y < self.rows - 1 {
-                    full_job.append("\n", 0.0, egui::TextFormat::default());
-                }
-            }
+                let g = ui.fonts(|f| f.layout_job(job));
+                self.line_cache[y as usize] = Some(g.clone());
+                g
+            };
 
-            self.galley_cache = Some(ui.fonts(|f| f.layout_job(full_job)));
-            self.dirty.store(false, Ordering::Relaxed);
-        }
-
-        if let Some(galley) = &self.galley_cache {
-            let rect = ui.available_rect_before_wrap();
-            // painter.galley is GPU-accelerated drawing.
-            // By NOT re-calculating the galley during zoom, the GPU simply scales the triangles.
-            ui.painter().galley(rect.min, galley.clone(), egui::Color32::WHITE);
+            painter.galley(line_pos, galley, egui::Color32::WHITE);
         }
     }
 
@@ -373,4 +381,3 @@ fn translate_color(c: ratatui::style::Color) -> egui::Color32 {
         }
     }
 }
-

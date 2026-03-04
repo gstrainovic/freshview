@@ -218,6 +218,7 @@ pub struct FreshViewApp {
     
     // Honest frame timing
     last_frame_instant: std::time::Instant,
+    #[allow(dead_code)]
     frame_time_ms: f32,
     zoom_factor: f32,
     
@@ -260,14 +261,14 @@ impl FreshViewApp {
         // --- Creative Background Monitor ---
         let metrics_clone = Arc::clone(&metrics);
         std::thread::spawn(move || {
-            let mut sys = System::new_all();
+            let mut sys = System::new();
             let pid = Pid::from(std::process::id() as usize);
             let mut counter = 0;
             
             loop {
-                sys.refresh_all();
-                let mut new_metrics = HardwareMetrics::default();
+                sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
                 
+                let mut new_metrics = HardwareMetrics::default();
                 if let Some(process) = sys.process(pid) {
                     new_metrics.cpu_usage = process.cpu_usage();
                     new_metrics.memory_mb = process.memory() / 1024 / 1024;
@@ -299,7 +300,7 @@ impl FreshViewApp {
                 }
 
                 counter += 1;
-                let _ = tx; // Keep sender alive
+                let _ = tx; 
                 std::thread::sleep(std::time::Duration::from_secs(1));
             }
         });
@@ -320,6 +321,8 @@ impl FreshViewApp {
     }
 
     fn update_internal(&mut self, ctx: &egui::Context) {
+        let work_start = std::time::Instant::now();
+        
         // Handle remote commands
         while let Ok(cmd) = self.command_rx.try_recv() {
             match cmd {
@@ -330,19 +333,32 @@ impl FreshViewApp {
             }
         }
 
-        // Calculate honest frame time
+        // Frame Delta
         let now = std::time::Instant::now();
-        self.frame_time_ms = now.duration_since(self.last_frame_instant).as_secs_f32() * 1000.0;
+        let frame_delta_ms = now.duration_since(self.last_frame_instant).as_secs_f32() * 1000.0;
         self.last_frame_instant = now;
+
+        let mut added_tabs = Vec::new();
+        DockArea::new(&mut self.dock_state)
+            .style(Style::from_egui(ctx.style().as_ref()))
+            .show(ctx, &mut MyTabViewer { ctx, added_tabs: &mut added_tabs });
+
+        for new_tab in added_tabs {
+            self.dock_state.main_surface_mut().push_to_focused_leaf(new_tab);
+        }
+
+        // Calculate actual work done
+        let metrics = self.shared_metrics.lock().unwrap().clone();
+        let work_time_ms = work_start.elapsed().as_secs_f32() * 1000.0;
+        self.frame_time_ms = work_time_ms;
 
         // Throttled STATS logging
         if self.last_log_time.elapsed().as_secs() >= 1 {
-            let metrics = self.shared_metrics.lock().unwrap().clone();
             let log_line = format!(
-                "STATS | Frame: {:>4.1}ms | CPU: {:>5.1}% | RAM: {:>7} MB | GPU: {:>3}% | VRAM: {:>7} MB\n",
-                self.frame_time_ms,
+                "STATS | Work: {:>5.2}ms | Delta: {:>4.0}ms | CPU: {:>5.1}% | GPU: {:>3}% | VRAM: {:>7} MB\n",
+                work_time_ms,
+                frame_delta_ms,
                 metrics.cpu_usage,
-                metrics.memory_mb,
                 metrics.gpu_usage,
                 metrics.vram_mb
             );
@@ -359,32 +375,6 @@ impl FreshViewApp {
             
             self.last_log_time = std::time::Instant::now();
         }
-
-        let mut added_tabs = Vec::new();
-        DockArea::new(&mut self.dock_state)
-            .style(Style::from_egui(ctx.style().as_ref()))
-            .show(ctx, &mut MyTabViewer { ctx, added_tabs: &mut added_tabs });
-
-        for new_tab in added_tabs {
-            self.dock_state.main_surface_mut().push_to_focused_leaf(new_tab);
-        }
-
-        // --- Honest Performance HUD ---
-        let metrics = self.shared_metrics.lock().unwrap().clone();
-        
-        egui::Window::new("Perf")
-            .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-10.0, 10.0))
-            .title_bar(false)
-            .resizable(false)
-            .collapsible(false)
-            .frame(egui::Frame::window(&ctx.style()).fill(egui::Color32::from_black_alpha(180)))
-            .show(ctx, |ui| {
-                ui.small(format!("Frame: {:.1} ms", self.frame_time_ms));
-                ui.small(format!("CPU:   {:.1}%", metrics.cpu_usage));
-                ui.small(format!("GPU:   {}%", metrics.gpu_usage));
-                ui.small(format!("RAM:   {} MB", metrics.memory_mb));
-                ui.small(format!("VRAM:  {} MB", metrics.vram_mb));
-            });
     }
 }
 
