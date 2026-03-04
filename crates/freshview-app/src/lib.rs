@@ -344,6 +344,7 @@ impl FreshViewApp {
         let frame_delta_ms = now.duration_since(self.last_frame_instant).as_secs_f32() * 1000.0;
         self.last_frame_instant = now;
 
+        // Render UI
         let mut added_tabs = Vec::new();
         DockArea::new(&mut self.dock_state)
             .style(Style::from_egui(ctx.style().as_ref()))
@@ -353,13 +354,10 @@ impl FreshViewApp {
             self.dock_state.main_surface_mut().push_to_focused_leaf(new_tab);
         }
 
-        // Calculate actual work done
-        let metrics = self.shared_metrics.lock().unwrap().clone();
-        let work_time_ms = work_start.elapsed().as_secs_f32() * 1000.0;
-        self.frame_time_ms = work_time_ms;
-
         // Throttled STATS logging
         if self.last_log_time.elapsed().as_secs() >= 1 {
+            let metrics = self.shared_metrics.lock().unwrap().clone();
+            let work_time_ms = work_start.elapsed().as_secs_f32() * 1000.0;
             let log_line = format!(
                 "STATS | Work: {:>5.2}ms | Delta: {:>4.0}ms | CPU: {:>5.1}% | GPU: {:>3}% | VRAM: {:>7} MB\n",
                 work_time_ms,
