@@ -204,25 +204,32 @@ impl TabViewer for MyTabViewer<'_> {
 
 // --- Main Application ---
 
-use sysinfo::{System, Pid};
+mod rpc_server;
 
+use sysinfo::{System, Pid};
 use std::sync::{Arc, Mutex};
+
+pub enum AppCommand {
+    SetZoom(f32),
+}
 
 struct FreshViewApp {
     dock_state: DockState<Tab>,
     shared_metrics: Arc<Mutex<HardwareMetrics>>,
+    command_rx: std::sync::mpsc::Receiver<AppCommand>,
     
     // Honest frame timing
     last_frame_instant: std::time::Instant,
     frame_time_ms: f32,
+    zoom_factor: f32,
 }
 
 #[derive(Default, Clone)]
-struct HardwareMetrics {
-    cpu_usage: f32,
-    memory_mb: u64,
-    gpu_usage: u32,
-    vram_mb: u64,
+pub struct HardwareMetrics {
+    pub cpu_usage: f32,
+    pub memory_mb: u64,
+    pub gpu_usage: u32,
+    pub vram_mb: u64,
 }
 
 impl FreshViewApp {
@@ -230,6 +237,10 @@ impl FreshViewApp {
         let editor = FreshEditorApp::new(120, 40).expect("Failed to init editor");
         let dock_state = DockState::new(vec![Tab::Editor(editor)]);
         let metrics = Arc::new(Mutex::new(HardwareMetrics::default()));
+        let (tx, rx) = std::sync::mpsc::channel();
+        
+        // Start RPC Server
+        rpc_server::start_server(metrics.clone(), tx);
         
         // --- Creative Background Monitor ---
         let metrics_clone = Arc::clone(&metrics);
@@ -262,8 +273,25 @@ impl FreshViewApp {
 
                 {
                     let mut m = metrics_clone.lock().unwrap();
-                    *m = new_metrics;
+                    *m = new_metrics.clone();
                 }
+
+                let log_line = format!(
+                    "STATS | CPU: {:>5.1}% | RAM: {:>7} MB | GPU: {:>3}% | VRAM: {:>7} MB\n",
+                    new_metrics.cpu_usage,
+                    new_metrics.memory_mb,
+                    new_metrics.gpu_usage,
+                    new_metrics.vram_mb
+                );
+                print!("{}", log_line); // Console
+                let _ = std::fs::OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open("freshview.log")
+                    .and_then(|mut f| {
+                        use std::io::Write;
+                        f.write_all(log_line.as_bytes())
+                    });
                 
                 std::thread::sleep(std::time::Duration::from_secs(1));
             }
@@ -272,14 +300,26 @@ impl FreshViewApp {
         Self { 
             dock_state, 
             shared_metrics: metrics,
+            command_rx: rx,
             last_frame_instant: std::time::Instant::now(),
             frame_time_ms: 0.0,
+            zoom_factor: 1.0,
         }
     }
 }
 
 impl eframe::App for FreshViewApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Handle remote commands
+        while let Ok(cmd) = self.command_rx.try_recv() {
+            match cmd {
+                AppCommand::SetZoom(z) => {
+                    self.zoom_factor = z;
+                    ctx.set_pixels_per_point(z);
+                }
+            }
+        }
+
         // Calculate honest frame time
         let now = std::time::Instant::now();
         self.frame_time_ms = now.duration_since(self.last_frame_instant).as_secs_f32() * 1000.0;
@@ -314,14 +354,34 @@ impl eframe::App for FreshViewApp {
 }
 
 fn main() -> eframe::Result {
-    env_logger::init();
+    let _log_file = std::fs::File::create("freshview.log").expect("failed to create log file");
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+    
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1200.0, 800.0]),
         ..Default::default()
     };
+
     eframe::run_native(
         "FreshView IDE",
         options,
-        Box::new(|cc| Ok(Box::new(FreshViewApp::new(cc)))),
+        Box::new(|cc| {
+            // Confirm which GPU we are using
+            if let Some(render_state) = &cc.wgpu_render_state {
+                let info = render_state.adapter.get_info();
+                let log_msg = format!(
+                    "\n--- GRAPHICS ADAPTER INFO ---\nSelected: {}\nBackend:  {:?}\nDriver:   {}\nType:     {:?}\n-----------------------------\n",
+                    info.name, info.backend, info.driver_info, info.device_type
+                );
+                println!("{}", log_msg);
+                let _ = std::fs::OpenOptions::new().append(true).open("freshview.log").and_then(|mut f| {
+                    use std::io::Write;
+                    f.write_all(log_msg.as_bytes())
+                });
+            }
+            Ok(Box::new(FreshViewApp::new(cc)))
+        }),
     )
 }

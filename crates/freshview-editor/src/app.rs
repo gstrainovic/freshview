@@ -203,6 +203,9 @@ impl FreshEditorApp {
             let buffer = self.terminal.backend().buffer();
             let mut full_job = egui::text::LayoutJob::default();
             
+            // Optimization: reuse a single string buffer for the whole frame
+            let mut text_buffer = String::with_capacity(self.cols as usize);
+            
             for y in 0..self.rows {
                 let mut x = 0;
                 while x < self.cols {
@@ -215,13 +218,13 @@ impl FreshEditorApp {
                         x += 1;
                     }
                     
-                    let mut text = String::new();
+                    text_buffer.clear();
                     for i in start_x..x {
-                        text.push_str(buffer[(i, y)].symbol());
+                        text_buffer.push_str(buffer[(i, y)].symbol());
                     }
 
                     full_job.append(
-                        &text,
+                        &text_buffer,
                         0.0,
                         egui::TextFormat {
                             font_id: font_id.clone(),

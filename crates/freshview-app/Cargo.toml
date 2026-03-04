@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-eframe = { workspace = true }
+eframe = { workspace = true, features = ["wgpu"] }
 egui = { workspace = true }
 egui_dock = "0.15"
 freshview-editor = { path = "../freshview-editor" }
@@ -13,3 +13,6 @@ sysinfo = "0.33"
 anyhow = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
+tokio = { version = "1.49", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
