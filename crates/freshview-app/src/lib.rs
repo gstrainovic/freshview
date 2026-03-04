@@ -361,14 +361,14 @@ impl FreshViewApp {
             let metrics = self.shared_metrics.lock().unwrap().clone();
             let work_time_ms = work_start.elapsed().as_secs_f32() * 1000.0;
             let log_line = format!(
-                "STATS | Work: {:>5.2}ms | Delta: {:>4.0}ms | CPU: {:>5.1}% | GPU: {:>3}% | VRAM: {:>7} MB\n",
+                "STATS | Work: {:>5.2}ms | Delta: {:>4.0}ms | CPU: {:>5.1}% | GPU: {:>3}% | VRAM: {:>7} MB",
                 work_time_ms,
                 frame_delta_ms,
                 metrics.cpu_usage,
                 metrics.gpu_usage,
                 metrics.vram_mb
             );
-            print!("{}", log_line);
+            println!("{}", log_line); // Immediate console output
             
             let _ = std::fs::OpenOptions::new()
                 .append(true)
@@ -376,7 +376,8 @@ impl FreshViewApp {
                 .open("freshview.log")
                 .and_then(|mut f| {
                     use std::io::Write;
-                    f.write_all(log_line.as_bytes())
+                    f.write_all(log_line.as_bytes())?;
+                    f.write_all(b"\n")
                 });
             
             self.last_log_time = std::time::Instant::now();
@@ -393,6 +394,9 @@ impl eframe::App for FreshViewApp {
 pub fn run() -> eframe::Result {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Warn)
+        .filter_module("wgpu_core", log::LevelFilter::Error)
+        .filter_module("wgpu_hal", log::LevelFilter::Error)
+        .filter_module("naga", log::LevelFilter::Error)
         .init();
     
     let options = eframe::NativeOptions {
